@@ -39,7 +39,6 @@ import {
   IResourceRole,
   IResponseData,
   ISSOConfig,
-  IUserConfig,
 } from '@/d.ts';
 import request from '@/util/request';
 import { encrypt } from '@/util/utils';
@@ -346,29 +345,6 @@ export async function getCurrentUserPermissions(): Promise<IUser> {
   const result = await request.get(`/api/v2/iam/users/me`);
   return result?.data;
 }
-/**
- * 获取系统配置
- */
-export async function getSystemConfig(): Promise<IUserConfig> {
-  const result = await request.get('/api/v2/config/organization/configurations');
-  const res = result?.data?.contents ?? [];
-  return res.reduce((data, item) => {
-    data[item.key] = item.value;
-    return data;
-  }, {});
-}
-
-/**
- * 提交系统配置
- */
-export async function setSystemConfig(
-  data: Record<string, string>[],
-): Promise<Record<string, string>[]> {
-  const result = await request.post('/api/v2/config/organization/configurations', {
-    data,
-  });
-  return result?.data;
-}
 
 /**
  * 新建任务流程
@@ -462,7 +438,6 @@ export async function getAuditList(params?: {
   page?: number;
   size?: number;
 }): Promise<IResponseData<IAudit>> {
-  console.log({ params });
   const result = await request.get('/api/v2/audit/events', {
     params,
   });

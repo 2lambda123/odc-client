@@ -1,3 +1,4 @@
+import { formatMessage } from '@/util/intl';
 /*
  * Copyright 2023 OceanBase
  *
@@ -18,7 +19,6 @@ import { listEnvironments } from '@/common/network/env';
 import { TaskType } from '@/d.ts';
 import { RiskLevelTextMap, RiskLevelEnum } from '../../interface';
 import { TaskTypeMap } from '@/component/Task/component/TaskTable';
-
 export const getEnvironmentOptions = async () => {
   const rawData = (await listEnvironments()) || [];
   const newEnvOptions = rawData?.map((rd) => {
@@ -48,15 +48,9 @@ export const getTaskTypeOptions = () => {
       value: TaskType.ASYNC,
     },
     {
-      label: TaskTypeMap[TaskType.PARTITION_PLAN],
-      value: TaskType.PARTITION_PLAN,
-    },
-    {
-      label: TaskTypeMap[TaskType.SQL_PLAN],
-      value: TaskType.SQL_PLAN,
-    },
-    {
-      label: TaskTypeMap[TaskType.ALTER_SCHEDULE],
+      label: formatMessage({
+        id: 'odc.src.page.Secure.RiskLevel.components.AutomaticRunning',
+      }), //'自动运行'
       value: TaskType.ALTER_SCHEDULE,
     },
     {
@@ -64,11 +58,10 @@ export const getTaskTypeOptions = () => {
       value: TaskType.SHADOW,
     },
     {
-      label: TaskTypeMap[TaskType.DATA_SAVE],
-      value: TaskType.DATA_SAVE,
+      label: TaskTypeMap[TaskType.EXPORT_RESULT_SET],
+      value: TaskType.EXPORT_RESULT_SET,
     },
   ];
-
   return newTaskTypeOptions;
 };
 export const getSqlCheckResultOptions = () => {
@@ -86,7 +79,6 @@ export const getSqlCheckResultOptions = () => {
       value: '' + RiskLevelEnum.MUST,
     },
   ];
-
   return sqlCheckResultOptions;
 };
 export const initOptions = async ({
@@ -102,13 +94,11 @@ export const initOptions = async ({
   envOptions?.forEach(({ value, label }) => (envIdMap[value] = label));
   setEnvironmentIdMap(envIdMap);
   setEnvironmentOptions(envOptions);
-
   const taskTypeOptions = await getTaskTypeOptions();
   const taskTypeIdMap = {};
   taskTypeOptions?.forEach(({ label, value }) => (taskTypeIdMap[value] = label));
   setTaskTypeIdMap(taskTypeIdMap);
   setTaskTypeOptions(taskTypeOptions);
-
   const sqlCheckResultOptions = await getSqlCheckResultOptions();
   const sqlChekcResultMap = {};
   sqlCheckResultOptions?.forEach(({ label, value }) => (sqlChekcResultMap['' + value] = label));

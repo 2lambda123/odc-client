@@ -30,6 +30,7 @@ import { SystemAction, systemActionMap } from '../ResourceSelector/const';
 import resourceActions from '../ResourceSelector/resourceActions';
 import { FormContent, RoleResource } from './component';
 import styles from './index.less';
+import tracert from '@/util/tracert';
 
 interface IProps {
   visible: boolean;
@@ -356,6 +357,7 @@ const FormModal: React.FC<IProps> = (props) => {
           ]);
           throw new Error(null);
         }
+        tracert.click('a3112.b64007.c330919.d367468');
         if (isEdit) {
           handleEdit({
             ...formData,
@@ -426,15 +428,6 @@ const FormModal: React.FC<IProps> = (props) => {
 
   const handleFieldChange = (label: string, value: any) => {
     const newData = set({ ...data }, label, value);
-    if (label === 'permissionType') {
-      if (!value.includes('systemOperationPermissions')) {
-        set(newData, 'systemOperationPermissions', null);
-        formRef.current.setFieldsValue({
-          systemOperationPermissions: [],
-        });
-      }
-    }
-
     formRef.current.setFieldsValue({
       [label]: value,
     });

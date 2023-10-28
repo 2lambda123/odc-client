@@ -165,13 +165,14 @@ const ActionBar: React.FC<IProps> = inject(
     };
 
     const handleReTry = async () => {
-      const { type, databaseId, executionStrategy, executionTime, parameters } = task;
+      const { type, databaseId, executionStrategy, executionTime, parameters, description } = task;
       const res = await createTask({
         taskType: type,
         databaseId,
         executionStrategy,
         executionTime,
         parameters,
+        description,
       });
 
       if (res) {
@@ -231,6 +232,7 @@ const ActionBar: React.FC<IProps> = inject(
               operationType: 'PAUSE',
             },
           });
+          props?.onReload?.();
         },
       });
     };
@@ -276,6 +278,7 @@ const ActionBar: React.FC<IProps> = inject(
               operationType: 'RESUME',
             },
           });
+          props?.onReload?.();
         },
       });
     };
@@ -290,6 +293,7 @@ const ActionBar: React.FC<IProps> = inject(
           operationType: 'TERMINATION',
         },
       });
+      props?.onReload?.();
     };
 
     const getTaskTools = (_task) => {

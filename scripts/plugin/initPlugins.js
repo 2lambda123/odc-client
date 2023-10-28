@@ -16,6 +16,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { watch } = require('./sync');
 
 const pluginPath = process.env.ODC_PLUGIN_PATH;
 const pluginInfoFilePath = path.resolve(process.cwd(), 'src/plugins/pluginList.ts')
@@ -63,6 +64,7 @@ function resolvePlugins() {
         /**
          * 建立映射
          */
+        // watch(absolutePath, linkPath)
         fs.symlinkSync(absolutePath, linkPath);
         pluginImport.push(`import * as ${name} from "./udp/${name}"`)
         exportVariables.push(name);
@@ -92,6 +94,7 @@ function resolveEnv() {
         if (fs.existsSync(linkPath)) {
             fs.unlinkSync(linkPath);
         }
+        // watch(path.resolve(pluginPath, config.umiConfig), linkPath)
         fs.symlinkSync(path.resolve(pluginPath, config.umiConfig), linkPath)
     }
     fs.writeFileSync(path.join(process.cwd(), '.env'), envContent);

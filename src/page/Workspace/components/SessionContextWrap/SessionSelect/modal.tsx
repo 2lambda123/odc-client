@@ -18,7 +18,6 @@ import { getConnectionList, getDataSourceGroupByProject } from '@/common/network
 import { listDatabases } from '@/common/network/database';
 import { listProjects } from '@/common/network/project';
 import { ConnectionMode } from '@/d.ts';
-import { SpaceType } from '@/d.ts/_index';
 import login, { UserStore } from '@/store/login';
 import { formatMessage } from '@/util/intl';
 import { useRequest } from 'ahooks';
@@ -38,9 +37,7 @@ export default inject('userStore')(
   observer(function SelectModal({ visible, dialectTypes, userStore, close }: IProps) {
     const context = useContext(SessionContext);
     const [form] = Form.useForm();
-    const isPersonal =
-      userStore?.organizations?.find((i) => i.id === userStore?.organizationId)?.type ===
-      SpaceType.PRIVATE;
+    const isPersonal = userStore?.isPrivateSpace();
     const {
       data: project,
       loading: projectLoading,
@@ -260,6 +257,11 @@ export default inject('userStore')(
                             return (
                               <Select.Option value={item.id} key={item.id}>
                                 {item.name}
+                                <span
+                                  style={{ color: 'var(--text-color-placeholder)', marginLeft: 5 }}
+                                >
+                                  {item.dataSource?.name}
+                                </span>
                               </Select.Option>
                             );
                           })}

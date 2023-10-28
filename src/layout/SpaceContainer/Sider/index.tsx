@@ -17,6 +17,7 @@
 import { AccessResourceTypePermission, Acess, createPermission } from '@/component/Acess';
 import { actionTypes, IManagerResourceType } from '@/d.ts';
 import { IPageType } from '@/d.ts/_index';
+import odc from '@/plugins/odc';
 import { TaskStore } from '@/store/task';
 import LinkOutlined from '@/svgr/icon_connection.svg';
 import TaskSvg from '@/svgr/icon_task.svg';
@@ -32,17 +33,18 @@ import Icon, {
   TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons';
+import { Link, useLocation } from '@umijs/max';
 import { Badge, Divider, Space } from 'antd';
 import classNames from 'classnames';
 import { inject, observer } from 'mobx-react';
 import React, { useEffect, useState } from 'react';
-import { Link, useLocation } from '@umijs/max';
 import HelpItem from './HelpItem';
 import styles from './index.less';
 import Logo from './Logo';
 import MenuItem from './MenuItem';
 import MineItem from './MineItem';
 import SpaceSelect from './SpaceSelect';
+import tracert from '@/util/tracert';
 
 interface IProps {
   taskStore?: TaskStore;
@@ -50,15 +52,21 @@ interface IProps {
 
 const Sider: React.FC<IProps> = function (props) {
   const { taskStore } = props;
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, _setCollapsed] = useState(false);
   const location = useLocation();
   const selected = location?.pathname?.split('/')[1];
   const mentItemGap = collapsed ? 12 : 12;
   const _count = taskStore.pendingApprovalInstanceIds?.length ?? 0;
   const count = !isClient() ? _count : 0;
 
+  function setCollapsed(v: boolean) {
+    tracert.click(v ? 'a3112.b46782.c330851.d367368' : 'a3112.b46782.c330851.d367367');
+    _setCollapsed(v);
+  }
+
   useEffect(() => {
     props.taskStore?.getTaskMetaInfo();
+    tracert.expo('a3112.b46782.c330851');
   }, []);
 
   return (
@@ -152,21 +160,23 @@ const Sider: React.FC<IProps> = function (props) {
               })} /*安全规范*/
             />
           </Link>
-          <Acess {...createPermission(IManagerResourceType.integration, actionTypes.read)}>
-            <Link
-              to={`/${IPageType.ExternalIntegration}/${IPageType.ExternalIntegration_Approval}`}
-            >
-              <MenuItem
-                key={IPageType.ExternalIntegration}
-                selected={selected === IPageType.ExternalIntegration}
-                icon={ForkOutlined}
-                collapsed={collapsed}
-                label={formatMessage({
-                  id: 'odc.SpaceContainer.Sider.ExternalIntegration',
-                })} /*外部集成*/
-              />
-            </Link>
-          </Acess>
+          {odc.appConfig?.manage?.integration?.enable ? (
+            <Acess {...createPermission(IManagerResourceType.integration, actionTypes.read)}>
+              <Link
+                to={`/${IPageType.ExternalIntegration}/${IPageType.ExternalIntegration_Approval}`}
+              >
+                <MenuItem
+                  key={IPageType.ExternalIntegration}
+                  selected={selected === IPageType.ExternalIntegration}
+                  icon={ForkOutlined}
+                  collapsed={collapsed}
+                  label={formatMessage({
+                    id: 'odc.SpaceContainer.Sider.ExternalIntegration',
+                  })} /*外部集成*/
+                />
+              </Link>
+            </Acess>
+          ) : null}
         </Space>
       </div>
       <Space size={mentItemGap} direction="vertical" className={styles.bottom}>

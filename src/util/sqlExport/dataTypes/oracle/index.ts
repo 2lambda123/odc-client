@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { isObjectColumn } from '@/util/column';
+import { ConnectionMode } from '@/d.ts';
+import { isNlsColumn, isObjectColumn } from '@/util/column';
 import { convertColumnType } from '@/util/utils';
 import OracleDate from './date';
 import OracleInterval from './interval';
@@ -25,6 +26,10 @@ import OracleTimestampLZ from './timestampLocalZone';
 import OracleTimestampTZ from './timestampTimeZone';
 
 export default function convertValueToSQLString(value: string | null, dataType: string) {
+  const isNls = isNlsColumn(dataType, ConnectionMode.OB_ORACLE);
+  if (isNls) {
+    return 'NULL';
+  }
   dataType = convertColumnType(dataType);
   switch (dataType) {
     case 'INTEGER':

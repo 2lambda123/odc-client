@@ -32,6 +32,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
 import ManualForm from './ManualForm';
 import ScanForm from './ScanForm';
+import tracert from '@/util/tracert';
 
 const defaultScanTableData: Array<ScanTableData> = [];
 
@@ -53,6 +54,7 @@ const FormSensitiveColumnDrawer = ({
   const sensitiveContext = useContext(SensitiveContext);
 
   const [scanTableData, setScanTableData] = useState<ScanTableData[]>([]);
+  const [originScanTableData, setOriginScanTableData] = useState<ScanTableData[]>([]);
   const [databasesMap, setDatabasesMap] = useState<Map<number, IDatabase[]>>(new Map());
   const [submiting, setSubmiting] = useState<boolean>(false);
   const [sensitiveColumns, setSensitiveColumns] = useState<ISensitiveColumn[]>([]);
@@ -87,6 +89,10 @@ const FormSensitiveColumnDrawer = ({
 
     setScanTableData(checkResult(resData));
   };
+  const resetSearch = () => {
+    setSearchText('');
+    setScanTableData(originScanTableData);
+  };
 
   const reset = () => {
     setTaskId(null);
@@ -103,6 +109,7 @@ const FormSensitiveColumnDrawer = ({
     _formRef.resetFields();
 
     setScanTableData(defaultScanTableData);
+    setOriginScanTableData(defaultScanTableData);
     setSubmiting(false);
     setSensitiveColumns([]);
     setSensitiveColumnMap(new Map());
@@ -143,6 +150,7 @@ const FormSensitiveColumnDrawer = ({
         }
       });
       setScanTableData(checkResult(resData));
+      setOriginScanTableData(checkResult(resData));
     } else {
       const newDataSource = sensitiveColumnMap.get(key).dataSource.map((item) => {
         if (item.columnName === columnName) {
@@ -155,6 +163,7 @@ const FormSensitiveColumnDrawer = ({
         resData.push(ds);
       });
       setScanTableData(checkResult(resData));
+      setOriginScanTableData(checkResult(resData));
     }
     setSensitiveColumnMap(sensitiveColumnMap);
   };
@@ -187,6 +196,7 @@ const FormSensitiveColumnDrawer = ({
       });
     }
     setScanTableData(checkResult(resData));
+    setOriginScanTableData(checkResult(resData));
     setSensitiveColumnMap(sensitiveColumnMap);
   };
   const handleScanTableDataDeleteByTableName = (database: string, tableName: string) => {
@@ -198,14 +208,18 @@ const FormSensitiveColumnDrawer = ({
         .dataSource?.filter(
           (item) => !item.columnName?.toLowerCase()?.includes(searchText?.toLowerCase()),
         );
+      const originResData = [];
+      sensitiveColumnMap?.forEach((dsItem) => {
+        if (dsItem?.dataSource?.length > 0) {
+          originResData.push(dsItem);
+        }
+      });
+      setOriginScanTableData(checkResult(originResData));
       sensitiveColumnMap?.forEach((dsItem, dsKey) => {
-        if (key !== dsKey) {
-          resData.push({
-            header: dsItem?.header,
-            dataSource: dsItem?.dataSource?.filter((item) =>
-              item.columnName?.toLowerCase()?.includes(searchText?.toLowerCase()),
-            ),
-          });
+        if (dsItem?.dataSource?.length > 0) {
+          resData.push(dsItem);
+        } else {
+          sensitiveColumnMap.delete(key);
         }
       });
     } else {
@@ -213,6 +227,7 @@ const FormSensitiveColumnDrawer = ({
       sensitiveColumnMap?.forEach((dsItem) => {
         resData.push(dsItem);
       });
+      setOriginScanTableData(checkResult(resData));
     }
     setScanTableData(checkResult(resData));
     setSensitiveColumnMap(sensitiveColumnMap);
@@ -220,6 +235,7 @@ const FormSensitiveColumnDrawer = ({
   const handleStartScan = async () => {
     reset();
     setScanTableData(defaultScanTableData);
+    setOriginScanTableData(defaultScanTableData);
     const rawData = await formRef.validateFields().catch();
     if (rawData.databaseIds?.includes(-1)) {
       rawData.allDatabases = true;
@@ -275,12 +291,14 @@ const FormSensitiveColumnDrawer = ({
     setSubmiting(true);
     const res = await batchCreateSensitiveColumns(context.projectId, data);
     if (res) {
+      tracert.click('a3112.b64002.c330861.d367391');
       message.success(
         formatMessage({ id: 'odc.SensitiveColumn.components.FormSensitiveColumnDrawer.New' }), //新建成功
       );
       onOk();
       reset();
       resetScanTableData();
+      setSubmiting(false);
     } else {
       message.error(
         formatMessage({
@@ -303,13 +321,16 @@ const FormSensitiveColumnDrawer = ({
       d.enabled = true;
       return d;
     });
+    setSubmiting(true);
     const res = await batchCreateSensitiveColumns(context.projectId, data?.manual);
     if (res) {
+      tracert.click('a3112.b64002.c330861.d367390');
       message.success(
         formatMessage({ id: 'odc.SensitiveColumn.components.FormSensitiveColumnDrawer.New' }), //新建成功
       );
       onOk();
       formRef.resetFields();
+      setSubmiting(false);
     } else {
       message.error(
         formatMessage({
@@ -324,7 +345,8 @@ const FormSensitiveColumnDrawer = ({
       formRef?.resetFields();
       _formRef?.resetFields();
       setSuccessful(false);
-      setScanTableData([]);
+      setScanTableData(defaultScanTableData);
+      setOriginScanTableData(defaultScanTableData);
       setSensitiveColumnMap(new Map());
       setSensitiveColumns([]);
       setTaskId(null);
@@ -372,6 +394,7 @@ const FormSensitiveColumnDrawer = ({
         resData.push(ds);
       });
       setScanTableData(checkResult(resData));
+      setOriginScanTableData(checkResult(resData));
       setScanStatus(ScannResultType.SUCCESS);
       setSuccessful(true);
       setPercent(Math.floor((finishedTableCount * 100) / allTableCount));
@@ -408,6 +431,7 @@ const FormSensitiveColumnDrawer = ({
         resData.push(ds);
       });
       setScanTableData(checkResult(resData));
+      setOriginScanTableData(checkResult(resData));
     }
   }, [searchText, successful]);
   useEffect(() => {
@@ -423,10 +447,12 @@ const FormSensitiveColumnDrawer = ({
       title={
         addSensitiveColumnType === AddSensitiveColumnType.Manual
           ? formatMessage({
-              id: 'odc.SensitiveColumn.components.FormSensitiveColumnDrawer.ManuallyAddSensitiveColumns',
+              id:
+                'odc.SensitiveColumn.components.FormSensitiveColumnDrawer.ManuallyAddSensitiveColumns',
             }) //手动添加敏感列
           : formatMessage({
-              id: 'odc.SensitiveColumn.components.FormSensitiveColumnDrawer.ScanToAddSensitiveColumns',
+              id:
+                'odc.SensitiveColumn.components.FormSensitiveColumnDrawer.ScanToAddSensitiveColumns',
             }) //扫描添加敏感列
       }
       width={addSensitiveColumnType === AddSensitiveColumnType.Manual ? 800 : 724}
@@ -450,7 +476,11 @@ const FormSensitiveColumnDrawer = ({
             </Button>
             <Button
               type="primary"
-              disabled={submiting}
+              disabled={
+                addSensitiveColumnType === AddSensitiveColumnType.Manual
+                  ? submiting
+                  : sensitiveColumnMap?.size === 0 || submiting
+              }
               onClick={
                 addSensitiveColumnType === AddSensitiveColumnType.Manual
                   ? handleManualSubmit
@@ -482,6 +512,8 @@ const FormSensitiveColumnDrawer = ({
             formRef,
             _formRef,
             hasScan,
+            originScanTableData,
+            resetSearch,
             resetScanTableData,
             reset,
             handleStartScan,

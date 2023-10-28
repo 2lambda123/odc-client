@@ -125,6 +125,7 @@ class TableData extends React.Component<
       );
       let resultSet = generateResultSetColumns([data], session?.connection?.dialectType)?.[0];
       if (resultSet) {
+        this._resultSetKey = generateUniqKey();
         this.setState({
           resultSet,
         });
@@ -296,6 +297,7 @@ class TableData extends React.Component<
     modalStore.changeCreateResultSetExportTaskModal(true, {
       sql,
       databaseId: session?.database.databaseId,
+      tableName,
     });
   };
 

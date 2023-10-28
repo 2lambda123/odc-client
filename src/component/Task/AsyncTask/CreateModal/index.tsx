@@ -38,6 +38,7 @@ import { useDBSession } from '@/store/sessionManager/hooks';
 import type { SQLStore } from '@/store/sql';
 import type { TaskStore } from '@/store/task';
 import { formatMessage } from '@/util/intl';
+import { getLocale } from '@umijs/max';
 import {
   AutoComplete,
   Button,
@@ -55,7 +56,6 @@ import type { UploadFile } from 'antd/lib/upload/interface';
 import Cookies from 'js-cookie';
 import { inject, observer } from 'mobx-react';
 import React, { useEffect, useState } from 'react';
-import { getLocale } from '@umijs/max';
 import DatabaseSelect from '../../component/DatabaseSelect';
 import styles from './index.less';
 
@@ -66,6 +66,7 @@ interface IProps {
   taskStore?: TaskStore;
   modalStore?: ModalStore;
   projectId?: number;
+  theme?: string;
 }
 
 enum ErrorStrategy {
@@ -89,7 +90,7 @@ const getFilesByIds = (ids: string[], names: string[]) => {
 };
 
 const CreateModal: React.FC<IProps> = (props) => {
-  const { modalStore, projectId } = props;
+  const { modalStore, projectId, theme } = props;
   const [form] = Form.useForm();
   const [sqlContentType, setSqlContentType] = useState(SQLContentType.TEXT);
   const [rollbackContentType, setRollbackContentType] = useState(SQLContentType.TEXT);
@@ -415,6 +416,12 @@ const CreateModal: React.FC<IProps> = (props) => {
     }
   }, [initSqlContent]);
 
+  useEffect(() => {
+    form.setFieldsValue({
+      databaseId: asyncTaskData?.databaseId,
+    });
+  }, [asyncTaskData?.databaseId]);
+
   return (
     <Drawer
       destroyOnClose
@@ -648,6 +655,9 @@ const CreateModal: React.FC<IProps> = (props) => {
           <CommonIDE
             initialSQL={initRollbackContent}
             language={`${isMySQL ? 'obmysql' : 'oboracle'}`}
+            editorProps={{
+              theme,
+            }}
             onSQLChange={(sql) => {
               handleSqlChange('rollbackSqlContent', sql);
             }}

@@ -136,6 +136,7 @@ export const action = async (config: INewCloudConnection) => {
        */
       name: params.name + '_' + params.tenantName,
       environmentId: envs?.[0]?.id,
+      password: 'defaultPwd',
     });
   }
   if (!targetConnection) {
@@ -180,5 +181,5 @@ export const action = async (config: INewCloudConnection) => {
     passwordSaved: true,
     password: password,
   });
-  gotoSQLWorkspace(null, targetConnection?.id, null);
+  gotoSQLWorkspace(null, targetConnection?.id, null, true);
 };

@@ -21,6 +21,7 @@ import {
   getConnectionExists,
   updateConnection,
 } from '@/common/network/connection';
+import { haveOCP } from '@/util/env';
 import { formatMessage } from '@/util/intl';
 import { useRequest } from 'ahooks';
 import { Button, Drawer, Input, message, Modal, Space, Spin } from 'antd';
@@ -168,7 +169,7 @@ export default function NewDatasourceDrawer({
       onClose={close}
       footer={
         <Space style={{ float: 'right' }}>
-          {isEdit ? (
+          {isEdit && !haveOCP() ? (
             <Button onClick={copyUri}>
               {
                 formatMessage({

@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import CommonTable from '@/component/CommonTable';
-import { CommonTableMode } from '@/component/CommonTable/interface';
 import { formatMessage } from '@/util/intl';
 import { CheckCircleFilled, DeleteOutlined, SyncOutlined } from '@ant-design/icons';
 import {
@@ -28,16 +26,19 @@ import {
   Progress,
   Select,
   Space,
+  Table,
   Tooltip,
 } from 'antd';
 import { ScanTableDataItem } from '../../../interface';
 import styles from './index.less';
 import ScanRule from './SacnRule';
-
+import classnames from 'classnames';
 const ScanForm = ({
   formRef,
   _formRef,
+  resetSearch,
   resetScanTableData,
+  originScanTableData,
   reset,
   hasScan,
   handleStartScan,
@@ -65,14 +66,24 @@ const ScanForm = ({
       >
         {scanLoading ? (
           <div>
-            <div style={{ marginLeft: '16px' }}>
+            <div
+              style={{
+                marginLeft: '16px',
+              }}
+            >
               {
                 formatMessage({
                   id: 'odc.SensitiveColumn.components.ScanForm.ScanningTheScanningTimeMay',
                 }) /*正在扫描中。扫描时间可能较长请耐心等待…*/
               }
             </div>
-            <Progress percent={percent} style={{ maxWidth: '628px', margin: '0px 16px' }} />
+            <Progress
+              percent={percent}
+              style={{
+                maxWidth: '628px',
+                margin: '0px 16px',
+              }}
+            />
           </div>
         ) : hasScan && successful ? (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
@@ -85,7 +96,13 @@ const ScanForm = ({
   return (
     <>
       <Form form={formRef} layout="vertical" requiredMark="optional">
-        <ScanRule {...{ formRef, resetScanTableData, reset }} />
+        <ScanRule
+          {...{
+            formRef,
+            resetScanTableData,
+            reset,
+          }}
+        />
         <Space>
           <Button
             onClick={handleStartScan}
@@ -94,13 +111,21 @@ const ScanForm = ({
           >
             {
               scanLoading
-                ? formatMessage({ id: 'odc.SensitiveColumn.components.ScanForm.Scanning' }) //正在扫描
-                : formatMessage({ id: 'odc.SensitiveColumn.components.ScanForm.StartScanning' }) //开始扫描
+                ? formatMessage({
+                    id: 'odc.SensitiveColumn.components.ScanForm.Scanning',
+                  }) //正在扫描
+                : formatMessage({
+                    id: 'odc.SensitiveColumn.components.ScanForm.StartScanning',
+                  }) //开始扫描
             }
           </Button>
           {successful && (
             <Space>
-              <CheckCircleFilled style={{ color: '#52c41a' }} />
+              <CheckCircleFilled
+                style={{
+                  color: '#52c41a',
+                }}
+              />
               <div>
                 {
                   formatMessage({
@@ -120,118 +145,163 @@ const ScanForm = ({
             }) /*扫描结果预览*/
           }
         </div>
-        {scanTableData?.length > 0 && (
-          <Input.Search
-            value={searchText}
-            placeholder={formatMessage({
-              id: 'odc.SensitiveColumn.components.ScanForm.EnterAColumnName',
-            })} /*请输入列名*/
-            width={240}
-            style={{ width: '240px' }}
-            onChange={handleSearchChange}
-            onSearch={onSearch}
-          />
+        {originScanTableData?.length > 0 ? (
+          <Space>
+            <Input.Search
+              value={searchText}
+              placeholder={formatMessage({
+                id: 'odc.SensitiveColumn.components.ScanForm.EnterAColumnName',
+              })}
+              /*请输入列名*/ width={240}
+              style={{
+                width: '240px',
+              }}
+              onChange={handleSearchChange}
+              onSearch={onSearch}
+            />
+            <Button onClick={resetSearch}>
+              {
+                formatMessage({
+                  id:
+                    'odc.src.page.Project.Sensitive.components.SensitiveColumn.components.Repossess',
+                }) /* 重置 */
+              }
+            </Button>
+          </Space>
+        ) : (
+          scanTableData?.length > 0 && (
+            <Input.Search
+              value={searchText}
+              placeholder={formatMessage({
+                id: 'odc.SensitiveColumn.components.ScanForm.EnterAColumnName',
+              })}
+              /*请输入列名*/ width={240}
+              style={{
+                width: '240px',
+              }}
+              onChange={handleSearchChange}
+              onSearch={onSearch}
+            />
+          )
         )}
       </div>
-      <Form form={_formRef} layout="vertical">
-        <Collapse defaultActiveKey={[0]} className={styles.collapse}>
-          {scanTableData?.length === 0 ? (
-            <Collapse.Panel
-              key={0}
-              header={
-                <Descriptions column={2} layout="horizontal" className={styles.descriptions}>
-                  <Descriptions.Item
-                    label={
-                      formatMessage({ id: 'odc.SensitiveColumn.components.ScanForm.Database' }) //数据库
-                    }
-                  >
-                    {''}
-                  </Descriptions.Item>
-                  <Descriptions.Item
-                    label={
-                      formatMessage({ id: 'odc.SensitiveColumn.components.ScanForm.Table' }) //表
-                    }
-                  >
-                    {''}
-                  </Descriptions.Item>
-                </Descriptions>
-              }
-            >
-              <EmptyOrSpin
-                {...{
-                  scanLoading,
-                  percent,
-                  hasScan,
-                  successful,
-                }}
-              />
-            </Collapse.Panel>
-          ) : (
-            <>
-              {scanTableData?.map(({ header: { database, tableName }, dataSource }, index) => {
-                return (
-                  <Collapse.Panel
-                    header={
-                      <Descriptions column={2} layout="horizontal" className={styles.descriptions}>
-                        <Descriptions.Item
-                          label={
-                            formatMessage({
-                              id: 'odc.SensitiveColumn.components.ScanForm.Database',
-                            }) //数据库
-                          }
+      <div
+        style={{
+          height: 'calc(100% - 150px)',
+          overflowY: 'scroll',
+        }}
+      >
+        <Form form={_formRef} layout="vertical">
+          <Collapse
+            defaultActiveKey={[0]}
+            className={
+              scanTableData?.length === 0
+                ? classnames(styles.collapse)
+                : classnames(styles.collapse, styles.collapses)
+            }
+          >
+            {scanTableData?.length === 0 ? (
+              <Collapse.Panel
+                key={0}
+                header={
+                  <Descriptions column={2} layout="horizontal" className={styles.descriptions}>
+                    <Descriptions.Item
+                      label={
+                        formatMessage({
+                          id: 'odc.SensitiveColumn.components.ScanForm.Database',
+                        }) //数据库
+                      }
+                    >
+                      {''}
+                    </Descriptions.Item>
+                    <Descriptions.Item
+                      label={
+                        formatMessage({
+                          id: 'odc.SensitiveColumn.components.ScanForm.Table',
+                        }) //表
+                      }
+                    >
+                      {''}
+                    </Descriptions.Item>
+                  </Descriptions>
+                }
+              >
+                <EmptyOrSpin
+                  {...{
+                    scanLoading,
+                    percent,
+                    hasScan,
+                    successful,
+                  }}
+                />
+              </Collapse.Panel>
+            ) : (
+              <>
+                {scanTableData?.map(({ header: { database, tableName }, dataSource }, index) => {
+                  return (
+                    <Collapse.Panel
+                      header={
+                        <Descriptions
+                          column={2}
+                          layout="horizontal"
+                          className={styles.descriptions}
                         >
-                          <span className={styles.tooltipContent}>{database}</span>
-                        </Descriptions.Item>
-                        <Descriptions.Item
-                          label={
-                            formatMessage({ id: 'odc.SensitiveColumn.components.ScanForm.Table' }) //表
-                          }
-                        >
-                          <div
-                            style={{
-                              display: 'flex',
-                              width: '100%',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                            }}
+                          <Descriptions.Item
+                            label={
+                              formatMessage({
+                                id: 'odc.SensitiveColumn.components.ScanForm.Database',
+                              }) //数据库
+                            }
                           >
-                            <Tooltip title={tableName}>
-                              <span className={styles.tooltipContent}>{tableName}</span>
-                            </Tooltip>
-                            <Tooltip
-                              title={
-                                formatMessage({
-                                  id: 'odc.SensitiveColumn.components.ScanForm.Delete',
-                                }) //删除
-                              }
+                            <span className={styles.tooltipContent}>{database}</span>
+                          </Descriptions.Item>
+                          <Descriptions.Item
+                            label={
+                              formatMessage({
+                                id: 'odc.SensitiveColumn.components.ScanForm.Table',
+                              }) //表
+                            }
+                          >
+                            <div
+                              style={{
+                                display: 'flex',
+                                width: '100%',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                              }}
                             >
-                              <DeleteOutlined
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleScanTableDataDeleteByTableName(database, tableName);
-                                }}
-                              />
-                            </Tooltip>
-                          </div>
-                        </Descriptions.Item>
-                      </Descriptions>
-                    }
-                    key={index}
-                  >
-                    <CommonTable
-                      mode={CommonTableMode.SMALL}
-                      titleContent={null}
-                      showToolbar={false}
-                      filterContent={{}}
-                      operationContent={null}
-                      onLoad={null}
-                      tableProps={{
-                        columns: [
+                              <Tooltip title={tableName}>
+                                <span className={styles.tooltipContent}>{tableName}</span>
+                              </Tooltip>
+                              <Tooltip
+                                title={
+                                  formatMessage({
+                                    id: 'odc.SensitiveColumn.components.ScanForm.Delete',
+                                  }) //删除
+                                }
+                              >
+                                <DeleteOutlined
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleScanTableDataDeleteByTableName(database, tableName);
+                                  }}
+                                />
+                              </Tooltip>
+                            </div>
+                          </Descriptions.Item>
+                        </Descriptions>
+                      }
+                      key={index}
+                    >
+                      <Table
+                        className={styles.bigTable}
+                        columns={[
                           {
                             title: formatMessage({
                               id: 'odc.SensitiveColumn.components.ScanForm.Column',
-                            }), //列
+                            }),
+                            //列
                             width: 146,
                             dataIndex: 'columnName',
                             key: 'columnName',
@@ -239,7 +309,8 @@ const ScanForm = ({
                           {
                             title: formatMessage({
                               id: 'odc.SensitiveColumn.components.ScanForm.IdentificationRules',
-                            }), //识别规则
+                            }),
+                            //识别规则
                             width: 126,
                             dataIndex: 'sensitiveRuleId',
                             key: 'sensitiveRuleId',
@@ -249,14 +320,17 @@ const ScanForm = ({
                             title: formatMessage({
                               id:
                                 'odc.SensitiveColumn.components.ScanForm.DesensitizationAlgorithm',
-                            }), //脱敏算法
+                            }),
+                            //脱敏算法
                             width: 180,
                             dataIndex: 'maskingAlgorithmId',
                             key: 'maskingAlgorithmId',
                             render: (text, record, _index) => (
                               <Select
                                 key={index}
-                                style={{ width: '144px' }}
+                                style={{
+                                  width: '144px',
+                                }}
                                 defaultValue={dataSource[_index].maskingAlgorithmId}
                                 onChange={(v) =>
                                   handleScanTableDataChange(
@@ -279,7 +353,8 @@ const ScanForm = ({
                           {
                             title: formatMessage({
                               id: 'odc.SensitiveColumn.components.ScanForm.Operation',
-                            }), //操作
+                            }),
+                            //操作
                             width: 88,
                             key: 'action',
                             render: (_, record) => (
@@ -302,25 +377,21 @@ const ScanForm = ({
                               </Space>
                             ),
                           },
-                        ],
-
-                        dataSource,
-                        // rowKey: 'id',
-                        pagination: false,
-                        scroll: {
-                          x: 564,
-                        },
-                      }}
-                    />
-                  </Collapse.Panel>
-                );
-              })}
-            </>
-          )}
-        </Collapse>
-      </Form>
+                        ]}
+                        dataSource={dataSource}
+                        pagination={{
+                          showSizeChanger: false,
+                        }}
+                      />
+                    </Collapse.Panel>
+                  );
+                })}
+              </>
+            )}
+          </Collapse>
+        </Form>
+      </div>
     </>
   );
 };
-
 export default ScanForm;
