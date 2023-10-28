@@ -69,6 +69,7 @@ import { checkPLNameChanged } from '@/util/pl';
 import { debounce } from 'lodash';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import SessionContextWrap from '../SessionContextWrap';
+import { getDataSourceModeConfig } from '@/common/datasource';
 const RESULT_HEIGHT = 230;
 const VERSION_324 = '3.2.4.0';
 const PL_DEBUG_TIP_VSIBLE_KEY = 'odc_pl_debug_visible';
@@ -432,14 +433,15 @@ export class PLPage extends Component<IProps, ISQLPageState> {
   // 调试 - 是否 PL 调试需要输入入参
   private isPLNeedFillParams() {
     const { params } = this.props;
-    const isMySQL = this.getSession()?.connection?.dialectType === ConnectionMode.OB_MYSQL;
+    const config = getDataSourceModeConfig(this.getSession()?.connection?.type);
+    const paramInputMode = config?.sql?.plParamMode || 'list';
     switch (params?.plPageType) {
       case PLPageType.anonymous: {
         return false;
       }
       case PLPageType.plEdit: {
         if ('params' in params?.plSchema) {
-          if (isMySQL) {
+          if (paramInputMode) {
             return params?.plSchema?.params?.find(
               (param) => param.paramMode && this.isInMode(param.paramMode),
             );
@@ -579,7 +581,10 @@ export class PLPage extends Component<IProps, ISQLPageState> {
       /**
        * 已经处于debug状态，说明是重新调试，只需要设置一下参数就行了
        */
-      this.getDebug()?.recoverDebug(plParams, anonymousBlockDdl);
+      this.getDebug()?.recoverDebug(
+        plParams,
+        plFormatSchema.plType === PLType.ANONYMOUSBLOCK ? plFormatSchema.ddl : anonymousBlockDdl,
+      );
       this.setState({
         showEditPLParamsModal: false,
         defaultAnonymousBlockDdl: '',
@@ -911,7 +916,7 @@ export class PLPage extends Component<IProps, ISQLPageState> {
       switch (params?.plPageType) {
         case PLPageType.plEdit: {
           let newParams;
-          let ddl;
+          let ddl = params.scriptText;
           if (!this.isPackageProgram()) {
             if (plType === PL_TYPE.FUNCTION) {
               const newFunc = await getFunctionByFuncName(
@@ -1131,11 +1136,9 @@ export class PLPage extends Component<IProps, ISQLPageState> {
   }
   private isEditorReadonly = () => {
     const { debug } = this.state;
-    const plSchema = this.getFormatPLSchema();
-    return (
-      (plSchema.plName && this.getSession()?.connection.dialectType === ConnectionMode.OB_MYSQL) ||
-      debug
-    );
+    const isReadonly =
+      PLPageType.plEdit === this.props.params.plPageType && this.props.params?.readonly;
+    return isReadonly || debug;
   };
   private getStatusBarDebugStatus() {
     const debug = this.getDebug();
@@ -1166,7 +1169,6 @@ export class PLPage extends Component<IProps, ISQLPageState> {
   public render() {
     const { pageKey, pageStore, params } = this.props;
     const debug = this.getDebug();
-    const isMySQL = this.getSession()?.connection.dialectType === ConnectionMode.OB_MYSQL;
     const {
       showSaveSQLModal,
       showEditPLParamsModal,
@@ -1187,7 +1189,7 @@ export class PLPage extends Component<IProps, ISQLPageState> {
       <ScriptPage
         session={this.getSession()}
         ctx={this}
-        language={`${isMySQL ? 'obmysql' : 'oboracle'}`}
+        language={getDataSourceModeConfig(this.getSession()?.connection?.type)?.sql?.language}
         toolbar={{
           loading: toolBarLoading || !isReady,
           actionGroupKey: this.getActionGroupKey(),

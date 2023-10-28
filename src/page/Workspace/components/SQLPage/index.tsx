@@ -55,10 +55,11 @@ import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { Component, forwardRef } from 'react';
 import { wrapRow } from '../DDLResultSet/util';
 import SessionContextWrap from '../SessionContextWrap';
-import ExecDetail from '../SQLExplain/ExecDetail';
-import ExecPlan from '../SQLExplain/ExecPlan';
+import ExecPlan from './ExecPlan';
+import ExecDetail from './ExecDetail';
 import SQLResultSet, { recordsTabKey, sqlLintTabKey } from '../SQLResultSet';
 import styles from './index.less';
+import { isConnectionModeBeMySQLType } from '@/util/connection';
 interface ISQLPageState {
   resultHeight: number;
   initialSQL: string;
@@ -211,6 +212,14 @@ export class SQLPage extends Component<IProps, ISQLPageState> {
     if (this.props.isShow && !prevProps.isShow) {
       this.editor?.focus();
     }
+    if (this.props.sessionId != prevProps.sessionId && this.props.sessionId) {
+      // update dbid
+      this.props.pageStore.updatePage(
+        this.props.pageKey,
+        {},
+        { cid: this.getSession()?.odcDatabase?.id },
+      );
+    }
   }
 
   public componentWillUnmount() {
@@ -309,7 +318,7 @@ export class SQLPage extends Component<IProps, ISQLPageState> {
         const result = await getCurrentSQL(
           this.editor.getValue(),
           offset,
-          this.getSession()?.connection.dialectType == ConnectionMode.OB_MYSQL,
+          isConnectionModeBeMySQLType(this.getSession()?.connection.dialectType),
           this.getSession()?.params?.delimiter,
         );
 
@@ -374,8 +383,14 @@ export class SQLPage extends Component<IProps, ISQLPageState> {
   }; // 保存 SQL
 
   public handleCreateSQL = async (script: ISQLScript) => {
-    const { userStore, pageStore, pageKey, onSetUnsavedModalContent, onChangeSaved, params } =
-      this.props;
+    const {
+      userStore,
+      pageStore,
+      pageKey,
+      onSetUnsavedModalContent,
+      onChangeSaved,
+      params,
+    } = this.props;
     let existedScriptId;
     const newFiles = await newScript(
       [new File([params.scriptText], script.objectName)],
@@ -727,13 +742,17 @@ export class SQLPage extends Component<IProps, ISQLPageState> {
     }
   };
 
-  public handleStartExportResultSet = (resultSetIndex: number, limit: number) => {
+  public handleStartExportResultSet = (
+    resultSetIndex: number,
+    limit: number,
+    tableName: string,
+  ) => {
     this.setState(
       {
         resultSetIndexToExport: resultSetIndex,
       },
       () => {
-        this.showExportResuleSetModal();
+        this.showExportResuleSetModal(tableName);
       },
     );
   };
@@ -749,7 +768,7 @@ export class SQLPage extends Component<IProps, ISQLPageState> {
           await getCurrentSQL(
             this.editor.getValue(),
             offset,
-            this.getSession()?.connection.dialectType == ConnectionMode.OB_MYSQL,
+            isConnectionModeBeMySQLType(this.getSession()?.connection.dialectType),
             this.getSession()?.params?.delimiter,
           )
         )?.sql;
@@ -814,7 +833,7 @@ export class SQLPage extends Component<IProps, ISQLPageState> {
     const result = await getCurrentSQL(
       value,
       offset,
-      this.getSession()?.connection.dialectType == ConnectionMode.OB_MYSQL,
+      isConnectionModeBeMySQLType(this.getSession()?.connection.dialectType),
       this.getSession()?.params?.delimiter,
     );
 
@@ -855,7 +874,7 @@ export class SQLPage extends Component<IProps, ISQLPageState> {
   //   }
   // };
 
-  showExportResuleSetModal = () => {
+  showExportResuleSetModal = (tableName: string) => {
     const {
       modalStore,
       pageKey,
@@ -867,6 +886,7 @@ export class SQLPage extends Component<IProps, ISQLPageState> {
     modalStore.changeCreateResultSetExportTaskModal(true, {
       sql,
       databaseId: session?.database.databaseId,
+      tableName,
     });
   };
 
@@ -878,7 +898,7 @@ export class SQLPage extends Component<IProps, ISQLPageState> {
       params,
     } = this.props;
     const session = this.getSession();
-    const isMySQL = session?.connection?.dialectType === ConnectionMode.OB_MYSQL;
+    const isMySQL = isConnectionModeBeMySQLType(session?.connection?.dialectType);
     const {
       initialSQL,
       showSaveSQLModal,
@@ -1181,6 +1201,7 @@ export default forwardRef(function (props: IProps, ref: React.ForwardedRef<SQLPa
     <SessionContextWrap
       defaultDatabaseId={props.params?.cid}
       defaultMode={props.params?.databaseFrom}
+      warnIfNotFound={false}
     >
       {({ session }) => {
         return <SQLPage sessionId={session?.sessionId} {...props} ref={ref} />;

@@ -44,6 +44,7 @@ import { clone } from 'lodash';
 import { inject, observer } from 'mobx-react';
 import { history } from '@umijs/max';
 import TitleButton from '../TitleButton';
+import RiskLevelLabel from '@/component/RiskLevelLabel';
 
 interface IProps {
   width: number;
@@ -282,12 +283,13 @@ const List: React.FC<IProps> = forwardRef(function (
             </Space>
           }
           env={
-            <Tag color={connection?.environmentStyle?.toLowerCase()}>
-              {
+            <RiskLevelLabel
+              color={connection?.environmentStyle}
+              content={
                 connection?.environmentName ||
-                  formatMessage({ id: 'odc.Content.List.NoEnvironment' }) //无环境
+                formatMessage({ id: 'odc.Content.List.NoEnvironment' }) //无环境
               }
-            </Tag>
+            />
           }
         />
       );
@@ -329,13 +331,6 @@ const List: React.FC<IProps> = forwardRef(function (
                   formatMessage({
                     id: 'odc.Content.List.YouCanConnectToOceanbase',
                   }) /*支持连接 OceanBase 数据库；*/
-                }
-
-                <br />
-                {
-                  formatMessage({
-                    id: 'odc.Content.List.IfNoConnectionInformationIs',
-                  }) /*若无连接信息，也可试一试申请数据库连接的权限*/
                 }
               </span>
             }

@@ -1,6 +1,6 @@
 {
   "name": "odc",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "private": true,
   "description": "企业级数据开发平台",
   "homepage": "https://www.oceanbase.com/",
@@ -69,6 +69,7 @@
     "tree-kill": "^1.2.1"
   },
   "devDependencies": {
+    "jsencrypt": "^3.3.2",
     "@ant-design/icons": "^4.0.0",
     "@antv/g2plot": "^1.0.2",
     "@oceanbase-odc/monaco-plugin-ob": "~0.0.20",
@@ -113,7 +114,6 @@
     "eventbusjs": "^0.2.0",
     "highlight.js": "^11.6.0",
     "immutability-helper": "^3.0.1",
-    "javascript-blowfish": "^1.0.4",
     "jest-canvas-mock": "^2.3.0",
     "js-base64": "^3.7.2",
     "js-cookie": "^2.2.0",

@@ -28,12 +28,14 @@ import { Button, Drawer, Input, message, Modal, Space, Spin } from 'antd';
 import copy from 'copy-to-clipboard';
 import { useEffect, useRef } from 'react';
 import DatasourceForm, { IFormRef } from './Form';
+import { ConnectType } from '@/d.ts';
 
 interface IProps {
   visible: boolean;
   isEdit?: boolean;
   isPersonal?: boolean;
   id?: number;
+  type?: ConnectType;
   close: () => void;
   onSuccess: () => void;
 }
@@ -41,7 +43,7 @@ interface IProps {
 export default function NewDatasourceDrawer({
   visible,
   isEdit,
-  isPersonal,
+  type,
   id,
   close,
   onSuccess,
@@ -189,7 +191,7 @@ export default function NewDatasourceDrawer({
     >
       <Spin spinning={loading}>
         <DatasourceForm
-          isPersonal={isPersonal}
+          type={data?.type || type}
           originDatasource={data}
           isEdit={isEdit}
           key={visible + ''}

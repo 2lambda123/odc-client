@@ -698,6 +698,8 @@ export interface IConnection {
   supportedOperations?: string[];
   type: ConnectType;
   errorMessage?: string;
+  jdbcUrlParameters?: Record<string, string>;
+  sessionInitScript?: string;
 }
 
 export interface IConnectionLabel {
@@ -1136,6 +1138,7 @@ export interface IFunction {
   createTime?: number;
   modifyTime?: number;
   errorMessage: string;
+  characteristic: IRoutineCharacteristic;
   variables: {
     varName: string;
     varType: string;
@@ -1146,6 +1149,12 @@ export enum ParamMode {
   IN = 'IN',
   OUT = 'OUT',
   INOUT = 'INOUT',
+}
+
+export interface IRoutineCharacteristic {
+  deterministic: boolean;
+  dataNature: 'CONTAINS SQL' | 'NO SQL' | 'READS SQL' | 'MODIFIES SQL';
+  sqlSecurity: 'DEFINER' | 'INVOKER';
 }
 
 export interface IPLParam {
@@ -1172,6 +1181,7 @@ export interface IProcedure {
   modifyTime: number;
   status: string;
   errorMessage: string;
+  characteristic: IRoutineCharacteristic;
   variables: {
     varName: string;
     varType: string;
@@ -1996,6 +2006,7 @@ export enum ResourceTreeNodeMenuKeys {
   CREATE_PROCEDURE = 'CREATE_PROCEDURE',
   OPEN_SQL_WINDOW = 'OPEN_SQL_WINDOW',
   COPY = 'COPY',
+  OPEN_TABLE_SQLWINDOW = 'OPEN_TABLE_SQLWINDOW',
   COPY_NAME = 'COPY_NAME',
   COPY_SELECT = 'COPY_SELECT',
   COPY_INSERT = 'COPY_INSERT',
@@ -2804,7 +2815,6 @@ export interface ServerSystemInfo {
    * 模拟数据条数限制
    */
   mockDataMaxRowCount?: number;
-  encryptionSecret?: string;
   // 是否开启 登录验证码
   captchaEnabled?: boolean;
   spmEnabled?: boolean;
@@ -2852,6 +2862,7 @@ export enum ConnectType {
   CLOUD_OB_MYSQL = 'CLOUD_OB_MYSQL',
   CLOUD_OB_ORACLE = 'CLOUD_OB_ORACLE',
   ODP_SHARDING_OB_MYSQL = 'ODP_SHARDING_OB_MYSQL',
+  MYSQL = 'MYSQL',
 }
 
 export enum DragInsertType {

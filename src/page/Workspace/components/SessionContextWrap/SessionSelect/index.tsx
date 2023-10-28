@@ -15,20 +15,25 @@
  */
 
 import { formatMessage } from '@/util/intl';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import SessionContext from '../context';
 
 import ConnectionPopover from '@/component/ConnectionPopover';
 import Icon, { DownOutlined, LoadingOutlined } from '@ant-design/icons';
-import { Popover, Space, Spin, Tag } from 'antd';
+import { Dropdown, Popover, Space, Spin, Tag } from 'antd';
 import styles from './index.less';
 
 import { ConnectionMode } from '@/d.ts';
 import PjSvg from '@/svgr/project_space.svg';
-import OBSvg from '@/svgr/source_ob.svg';
 import classNames from 'classnames';
 import SelectModal from './modal';
 import tracert from '@/util/tracert';
+import { getDataSourceStyleByConnectType } from '@/common/datasource';
+import { useRequest } from 'ahooks';
+import { listDatabases } from '@/common/network/database';
+import SessionDropdown from './SessionDropdown';
+import RiskLevelLabel from '@/component/RiskLevelLabel';
+import { EnvColorMap } from '@/constant';
 
 export default function SessionSelect({
   readonly,
@@ -43,6 +48,19 @@ export default function SessionSelect({
     tracert.expo('a3112.b41896.c330994');
   }, []);
 
+  const { data, loading, run: fetchDatabase } = useRequest(listDatabases, {
+    manual: true,
+  });
+
+  const databaseOptions = useMemo(() => {
+    return data?.contents?.map((item) => {
+      return {
+        label: item.name,
+        key: item.id,
+      };
+    });
+  }, [data]);
+
   function renderProject() {
     return (
       <Popover
@@ -50,26 +68,44 @@ export default function SessionSelect({
         placement="bottomLeft"
         content={<ConnectionPopover connection={context?.session?.connection} />}
       >
-        <Space size={4}>
+        <Space className={styles.link} size={4}>
           <Icon component={PjSvg} style={{ fontSize: 14, verticalAlign: 'text-bottom' }} />
           <span style={{ verticalAlign: 'top' }}>
             {context?.session?.odcDatabase?.project?.name}
           </span>
+          {!context.datasourceMode && (
+            <>
+              <span>/</span>
+              {context?.session?.odcDatabase?.name}
+            </>
+          )}
+          <DownOutlined />
         </Space>
       </Popover>
     );
   }
 
   function renderDatasource() {
+    const DBIcon = getDataSourceStyleByConnectType(context?.session?.connection?.type)?.icon;
     return (
       <Popover
         overlayClassName={styles.pop}
         placement="bottomLeft"
         content={<ConnectionPopover connection={context?.session?.connection} />}
       >
-        <Space size={4}>
-          <Icon component={OBSvg} style={{ fontSize: 16, verticalAlign: 'text-top' }} />
+        <Space className={styles.link} size={4}>
+          <Icon
+            component={DBIcon?.component}
+            style={{ fontSize: 16, verticalAlign: 'text-top', color: DBIcon?.color }}
+          />
           <span style={{ verticalAlign: 'top' }}>{context?.session?.connection?.name}</span>
+          {!context.datasourceMode && (
+            <>
+              <span>/</span>
+              {context?.session?.odcDatabase?.name}
+            </>
+          )}
+          <DownOutlined />
         </Space>
       </Popover>
     );
@@ -80,84 +116,61 @@ export default function SessionSelect({
     }
     return (
       <div className={styles.tag}>
-        <Tag color={context?.session?.odcDatabase?.environment?.style?.toLowerCase()}>
-          {context?.session?.odcDatabase?.environment?.name}
-        </Tag>
+        <RiskLevelLabel
+          color={context?.session?.odcDatabase?.environment?.style}
+          content={context?.session?.odcDatabase?.environment?.name}
+        />
       </div>
     );
   }
   function renderSessionInfo() {
+    const fromDataSource = context?.from === 'datasource' || context.datasourceMode;
     if (readonly) {
       return (
         <>
           {renderEnv()}
-          <div className={classNames(styles.dataSource, styles.readonly)}>
-            {context?.from === 'datasource' || context.datasourceMode
-              ? renderDatasource()
-              : renderProject()}
+          <div className={classNames(styles.readonly)}>
+            {fromDataSource ? renderDatasource() : renderProject()}
           </div>
-          {!context.datasourceMode && (
-            <>
-              <span>/</span>
-              <div className={classNames(styles.database, styles.readonly)}>
-                {context?.session?.odcDatabase?.name}
-              </div>
-            </>
-          )}
         </>
       );
     }
     return (
-      <>
-        {renderEnv()}
-        <div
-          onClick={() => {
-            tracert.click('a3112.b41896.c330994.d367631');
-            setVisible(true);
-          }}
-          className={styles.dataSource}
-        >
-          {context?.from === 'datasource' || context.datasourceMode
-            ? renderDatasource()
-            : renderProject()}
+      <SessionDropdown>
+        <div className={styles.content}>
+          {renderEnv()}
+          <div>{fromDataSource ? renderDatasource() : renderProject()}</div>
         </div>
-        {!context.datasourceMode && (
-          <>
-            <span>/</span>
-            <div
-              onClick={() => {
-                tracert.click('a3112.b41896.c330994.d367631');
-                setVisible(true);
-              }}
-              className={styles.database}
-            >
-              {context?.session?.odcDatabase?.name} <DownOutlined />
-            </div>
-          </>
-        )}
-      </>
+      </SessionDropdown>
     );
   }
 
   return (
     <>
       {!context?.databaseId && !context?.datasourceId ? (
-        <div className={styles.line}>
-          <a
-            onClick={() => {
-              tracert.click('a3112.b41896.c330994.d367630');
-              setVisible(true);
-            }}
-          >
-            {
-              formatMessage({
-                id: 'odc.SessionContextWrap.SessionSelect.SelectADatabase',
-              }) /*请选择数据库*/
-            }
-          </a>
+        <div
+          style={{
+            background: EnvColorMap[context?.session?.odcDatabase?.environment?.style]?.background,
+          }}
+          className={styles.line}
+        >
+          <SessionDropdown>
+            <a>
+              {
+                formatMessage({
+                  id: 'odc.SessionContextWrap.SessionSelect.SelectADatabase',
+                }) /*请选择数据库*/
+              }
+            </a>
+          </SessionDropdown>
         </div>
       ) : (
-        <div className={styles.line}>
+        <div
+          style={{
+            background: EnvColorMap[context?.session?.odcDatabase?.environment?.style]?.background,
+          }}
+          className={styles.line}
+        >
           {context?.session ? (
             renderSessionInfo()
           ) : (

@@ -35,6 +35,7 @@ import { PlusOutlined, QuestionCircleFilled, ReloadOutlined } from '@ant-design/
 import { message, Modal } from 'antd';
 import { ResourceNodeType } from '../../type';
 import { IMenuItemConfig } from '../type';
+import { getDataSourceModeConfig } from '@/common/datasource';
 
 export const procedureMenusConfig: Partial<Record<ResourceNodeType, IMenuItemConfig[]>> = {
   [ResourceNodeType.ProcedureRoot]: [
@@ -46,8 +47,7 @@ export const procedureMenusConfig: Partial<Record<ResourceNodeType, IMenuItemCon
       actionType: actionTypes.create,
       icon: BatchCompileSvg,
       isHide(session, node) {
-        const isMySQL = session.connection.dialectType === ConnectionMode.OB_MYSQL;
-        return isMySQL;
+        return !getDataSourceModeConfig(session?.connection?.type)?.features?.compile;
       },
       run(session, node) {
         openBatchCompilePLPage(
@@ -133,8 +133,7 @@ export const procedureMenusConfig: Partial<Record<ResourceNodeType, IMenuItemCon
       ],
       ellipsis: true,
       isHide(session, node) {
-        const isMySQL = session.connection.dialectType === ConnectionMode.OB_MYSQL;
-        return isMySQL;
+        return !getDataSourceModeConfig(session?.connection?.type)?.features?.compile;
       },
       async run(session, node) {
         const proc: IProcedure = node.data;
@@ -199,7 +198,9 @@ export const procedureMenusConfig: Partial<Record<ResourceNodeType, IMenuItemCon
           session?.database?.dbName,
           session?.odcDatabase?.id,
         );
-
+        if (!plPage) {
+          return;
+        }
         triggerActionAfterPLPageCreated(plPage, 'run', isNew);
       },
     },

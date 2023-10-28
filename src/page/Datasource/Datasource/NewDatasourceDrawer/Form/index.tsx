@@ -16,13 +16,13 @@
 
 import { testConnection } from '@/common/network/connection';
 import { listEnvironments } from '@/common/network/env';
-import { AccountType, ConnectType, IConnectionTestErrorType } from '@/d.ts';
-import { IDatasource } from '@/d.ts/datasource';
-import { isConnectTypeBeShardingType } from '@/util/connection';
+import { IDataSourceType, IDatasource } from '@/d.ts/datasource';
+import { AccountType, ConnectType, ConnectionMode, IConnectionTestErrorType } from '@/d.ts';
 import { haveOCP } from '@/util/env';
 import { formatMessage } from '@/util/intl';
 import { useRequest } from 'ahooks';
-import { Form, FormInstance, Input, Select, Space } from 'antd';
+import { Form, FormInstance, Input, Select, Space, Typography } from 'antd';
+import Icon from '@ant-design/icons';
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import Account from './Account';
 import AddressItems from './AddressItems';
@@ -31,34 +31,35 @@ import DBTypeItem from './DBTypeItem';
 import ParseURLItem from './ParseURLItem';
 import SSLItem from './SSLItem';
 import SysForm from './SysForm';
-
+import { ConnectTypeText } from '@/constant/label';
+import {
+  getAllConnectTypes,
+  getDataSourceModeConfig,
+  getDataSourceStyleByConnectType,
+  getDsByConnectType,
+} from '@/common/datasource';
+import ExtraConfig from './ExtraConfig';
+import JDBCParamsItem from './JDBCParamsItem';
 const Option = Select.Option;
-
 export interface IFormRef {
   form: FormInstance<IDatasource>;
 }
-
 interface IProps {
   isEdit?: boolean;
   originDatasource?: IDatasource;
-  isPersonal?: boolean;
+  type: ConnectType;
 }
-
 export default forwardRef<IFormRef, IProps>(function DatasourceForm(
-  { isEdit, originDatasource, isPersonal }: IProps,
+  { isEdit, originDatasource, type }: IProps,
   ref,
 ) {
   const [form] = Form.useForm();
-
-  const sysAccountExist = isEdit && !!originDatasource?.sysTenantUsername;
-
   const [testResult, setTestResult] = useState<{
     active: boolean;
     errorCode: IConnectionTestErrorType;
     errorMessage: string;
     type: ConnectType;
   }>();
-
   useImperativeHandle(
     ref,
     () => {
@@ -68,9 +69,7 @@ export default forwardRef<IFormRef, IProps>(function DatasourceForm(
     },
     [form],
   );
-
   const { data: environments, loading } = useRequest(listEnvironments);
-
   async function test() {
     setTestResult(null);
     let values;
@@ -84,12 +83,19 @@ export default forwardRef<IFormRef, IProps>(function DatasourceForm(
         'username',
         'password',
         'sslConfig',
+        'sessionInitScript',
+        'jdbcUrlParameters',
       ]);
     } catch (e) {}
     if (!values) {
       return;
     }
-    const params = isEdit ? { ...originDatasource, ...values } : values;
+    const params = isEdit
+      ? {
+          ...originDatasource,
+          ...values,
+        }
+      : values;
     const res = await testConnection(params, AccountType.MAIN, true);
     if (res?.errMsg) {
       setTestResult({
@@ -138,7 +144,10 @@ export default forwardRef<IFormRef, IProps>(function DatasourceForm(
     }
     setTestResult(res?.data);
   }
-
+  const connectTypeList: ConnectType[] = type
+    ? getAllConnectTypes(getDsByConnectType(type))
+    : getAllConnectTypes(IDataSourceType.OceanBase);
+  const dsc = getDataSourceModeConfig(type)?.connection;
   return (
     <DatasourceFormContext.Provider
       value={{
@@ -146,13 +155,13 @@ export default forwardRef<IFormRef, IProps>(function DatasourceForm(
         test,
         testResult,
         isEdit,
-        isPersonal,
         originDatasource,
+        dataSourceConfig: dsc,
       }}
     >
       <Form
         initialValues={{
-          type: ConnectType.OB_ORACLE,
+          type,
         }}
         layout="vertical"
         form={form}
@@ -160,61 +169,123 @@ export default forwardRef<IFormRef, IProps>(function DatasourceForm(
       >
         {isEdit ? (
           <Form.Item
-            rules={[{ required: true, max: 32 }]}
-            label={formatMessage({ id: 'odc.NewDatasourceDrawer.Form.DataSourceName' })}
+            rules={[
+              {
+                required: true,
+                max: 128,
+              },
+            ]}
+            label={formatMessage({
+              id: 'odc.NewDatasourceDrawer.Form.DataSourceName',
+            })}
             /*数据源名称*/ name={'name'}
           >
-            <Input style={{ width: '100%' }} />
+            <Input
+              style={{
+                width: '100%',
+              }}
+            />
           </Form.Item>
         ) : null}
-        <DBTypeItem />
-        {!haveOCP() && <ParseURLItem autoType={!isEdit} />}
+        <Typography>
+          <Typography.Paragraph>
+            <Space size={4}>
+              <span>
+                {
+                  formatMessage({
+                    id:
+                      'odc.src.page.Datasource.Datasource.NewDatasourceDrawer.Form.DataSourceType',
+                  }) /* 数据源类型: */
+                }
+              </span>
+              <Icon
+                component={getDataSourceStyleByConnectType(type)?.icon?.component}
+                style={{
+                  color: getDataSourceStyleByConnectType(type)?.icon?.color,
+                  fontSize: 14,
+                }}
+              />
+              {ConnectTypeText[type] || ''}
+            </Space>
+          </Typography.Paragraph>
+        </Typography>
+        {/* <DBTypeItem /> */}
         <Form.Item
-          rules={[{ required: true }]}
-          label={formatMessage({ id: 'odc.NewDatasourceDrawer.Form.Type' })} /*类型*/
-          name={'type'}
-          noStyle={haveOCP() ? true : false}
+          rules={[
+            {
+              required: true,
+            },
+          ]}
+          label={formatMessage({
+            id: 'odc.NewDatasourceDrawer.Form.Type',
+          })}
+          /*类型*/ name={'type'}
+          noStyle
         >
           <Select
             disabled={isEdit}
-            style={{ width: 208, display: haveOCP() ? 'none' : 'inline-block' }}
+            placeholder={
+              formatMessage({
+                id:
+                  'odc.src.page.Datasource.Datasource.NewDatasourceDrawer.Form.PleaseChooseTheType.1',
+              }) /* 请选择类型 */
+            }
+            style={{
+              width: 208,
+              display: 'none',
+            }}
           >
-            <Option value={ConnectType.OB_MYSQL}>OceanBase MySQL</Option>
-            <Option value={ConnectType.OB_ORACLE}>OceanBase Oracle</Option>
-            {!haveOCP() && (
-              <>
-                <Option value={ConnectType.CLOUD_OB_MYSQL}>OceanBase MySQL Cloud</Option>
-                <Option value={ConnectType.CLOUD_OB_ORACLE}>OceanBase Oracle Cloud</Option>
-                {/* <Option value={ConnectType.ODP_SHARDING_OB_MYSQL}>OceanBase MySQL Sharding</Option> */}
-              </>
-            )}
-          </Select>
-        </Form.Item>
-        <AddressItems />
-        <Account isEdit={isEdit} />
-        <Form.Item
-          rules={[{ required: true }]}
-          label={formatMessage({ id: 'odc.NewDatasourceDrawer.Form.Environment' })}
-          /*环境*/ name={'environmentId'}
-        >
-          <Select loading={loading} style={{ width: 208 }}>
-            {environments?.map((env) => {
-              return <Option value={env.id}>{env.name}</Option>;
+            {connectTypeList?.map((item) => {
+              return (
+                <Option key={item} value={item}>
+                  {ConnectTypeText[item]}
+                </Option>
+              );
             })}
           </Select>
         </Form.Item>
-        {!haveOCP() && (
-          <Space style={{ width: '100%' }} direction="vertical">
-            <Form.Item shouldUpdate noStyle>
-              {({ getFieldValue }) => {
-                return isConnectTypeBeShardingType(getFieldValue('type')) ? null : (
-                  <SysForm formRef={form} isEdit={isEdit} sysAccountExist={sysAccountExist} />
-                );
-              }}
-            </Form.Item>
-            <SSLItem />
-          </Space>
-        )}
+        <Form.Item noStyle shouldUpdate>
+          {({ getFieldValue }) => {
+            const type = getFieldValue('type');
+            if (!type) {
+              return null;
+            }
+            return (
+              <>
+                {!haveOCP() && <ParseURLItem autoType={!isEdit} />}
+                <AddressItems />
+                <Account isEdit={isEdit} />
+                <Form.Item
+                  rules={[
+                    {
+                      required: true,
+                    },
+                  ]}
+                  label={formatMessage({
+                    id: 'odc.NewDatasourceDrawer.Form.Environment',
+                  })}
+                  /*环境*/ name={'environmentId'}
+                >
+                  <Select
+                    loading={loading}
+                    style={{
+                      width: 208,
+                    }}
+                  >
+                    {environments?.map((env) => {
+                      return (
+                        <Option key={env.id} value={env.id}>
+                          {env.name}
+                        </Option>
+                      );
+                    })}
+                  </Select>
+                </Form.Item>
+                {!haveOCP() && <ExtraConfig />}
+              </>
+            );
+          }}
+        </Form.Item>
       </Form>
     </DatasourceFormContext.Provider>
   );

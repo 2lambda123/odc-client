@@ -54,6 +54,7 @@ interface IProps {
   datasourceId: number;
   showDatasource?: boolean;
   simpleHeader?: boolean;
+  theme?: 'dark' | 'white';
 }
 
 class RecycleBin extends Component<
@@ -236,6 +237,7 @@ class RecycleBin extends Component<
   public handleEditPropertyInCell = (newRows) => {
     this.session.updateRecycleObjectName(newRows);
     this.triggerTableLayout();
+    this.forceUpdate();
   };
 
   /**
@@ -300,7 +302,7 @@ class RecycleBin extends Component<
       recycleConfig,
     } = this.state;
 
-    const { simpleHeader } = this.props;
+    const { simpleHeader, theme } = this.props;
 
     const columns: ColumnsType<IRecycleObject> = [
       {
@@ -567,6 +569,7 @@ class RecycleBin extends Component<
             columns={columnsInRestoreDrawer}
             rowKey="uniqueId"
             rows={selectedObjects as any}
+            theme={theme}
             onRowsChange={this.handleEditPropertyInCell}
           />
 
@@ -602,7 +605,7 @@ export default function WrapRecycleBin(props: Omit<IProps, 'session'>) {
         return !session ? (
           <WorkSpacePageLoading />
         ) : (
-          <RecycleBin key={session?.sessonId} session={session} {...props} />
+          <RecycleBin key={session?.sessionId} session={session} {...props} />
         );
       }}
     </SessionContextWrap>

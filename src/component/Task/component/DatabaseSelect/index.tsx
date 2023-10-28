@@ -21,12 +21,18 @@ import { formatMessage } from '@/util/intl';
 import { Form, Popover, Select, Space, Tag, Typography } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
+import { IDatabase } from '@/d.ts/database';
+import { getDataSourceModeConfig } from '@/common/datasource';
+import RiskLevelLabel from '@/component/RiskLevelLabel';
+import { useParams } from '@umijs/max';
+import { toInteger } from 'lodash';
 interface IProps {
-  type?: TaskType;
+  type: TaskType;
   label?: string;
   name?: string;
   projectId?: number;
   extra?: string;
+  width?: string;
   onChange?: (v: number) => void;
 }
 const { Text } = Typography;
@@ -40,18 +46,16 @@ const DatabaseSelect: React.FC<IProps> = (props) => {
     name = 'databaseId',
     projectId,
     extra = '',
+    width = '320px',
     onChange,
   } = props;
-  const [database, setDatabase] = useState([]);
+  const [database, setDatabase] = useState<IDatabase[]>([]);
+  const { datasourceId } = useParams<{ datasourceId: string }>();
   const form = Form.useFormInstance();
   const databaseId = Form.useWatch(name, form);
   const databaseOptions = database
     ?.filter((item) =>
-      [TaskType.SHADOW, TaskType.SQL_PLAN, TaskType.DATA_ARCHIVE, TaskType.DATA_DELETE]?.includes(
-        type,
-      )
-        ? item?.dataSource?.dialectType === 'OB_MYSQL'
-        : true,
+      getDataSourceModeConfig(item.dataSource?.type)?.features?.task?.includes(type),
     )
     ?.map(({ name, id, environment, dataSource, project }) => ({
       label: (
@@ -63,7 +67,7 @@ const DatabaseSelect: React.FC<IProps> = (props) => {
           content={
             <Space direction="vertical">
               <Space>
-                <Tag color={environment?.style?.toLowerCase()}>{environment?.name}</Tag>
+                <RiskLevelLabel color={environment?.style} content={environment?.name} />
                 <Text strong>{name}</Text>
               </Space>
               <Text type="secondary">
@@ -92,17 +96,17 @@ const DatabaseSelect: React.FC<IProps> = (props) => {
               display: 'flex',
             }}
           >
-            <Tag color={environment?.style?.toLowerCase()}>{environment?.name}</Tag>
+            <RiskLevelLabel color={environment?.style} content={environment?.name} />
             <span>{name}</span>
           </Space>
         </Popover>
       ),
       value: id,
     }));
-  const loadDatabase = async (projectId: number) => {
+  const loadDatabase = async (projectId: number, datasourceId: number) => {
     const res = await listDatabases(
       projectId,
-      null,
+      datasourceId,
       null,
       null,
       null,
@@ -119,7 +123,7 @@ const DatabaseSelect: React.FC<IProps> = (props) => {
     return database?.find((item) => item.id === databaseId)?.project;
   }, [database, databaseId]);
   useEffect(() => {
-    loadDatabase(projectId);
+    loadDatabase(projectId, datasourceId ? toInteger(datasourceId) : null);
   }, []);
   return (
     <Form.Item
@@ -129,7 +133,8 @@ const DatabaseSelect: React.FC<IProps> = (props) => {
       extra={
         <Space direction="vertical" size={2}>
           {
-            project &&
+            !login.isPrivateSpace() &&
+              !!project &&
               formatMessage(
                 {
                   id: 'odc.component.DatabaseSelect.CurrentProjectProjectname',
@@ -159,9 +164,13 @@ const DatabaseSelect: React.FC<IProps> = (props) => {
         placeholder={formatMessage({
           id: 'odc.component.DatabaseSelect.PleaseSelect',
         })}
-        /*请选择*/ style={{
-          width: '320px',
-        }}
+        /*请选择*/ style={
+          width
+            ? {
+                width,
+              }
+            : null
+        }
         options={databaseOptions}
         onChange={handleDatabaseChange}
       />

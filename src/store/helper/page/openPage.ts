@@ -22,6 +22,7 @@ import {
   getTypemByName,
 } from '@/common/network';
 import {
+  ConnectionMode,
   DbObjectType,
   IFunction,
   IProcedure,
@@ -86,6 +87,8 @@ import {
 import { CreateTablePage, CreateTriggerPage, CreateViewPage, SQLConfirmPage } from './pages/create';
 import { AnonymousPage, PackageBodyPage, PackageHeadPage, PLEditPage } from './pages/pl';
 import { findPageByScriptIdAndType } from './util';
+import sessionManager from '@/store/sessionManager';
+import { getDataSourceModeConfig } from '@/common/datasource';
 
 export function openPackageHeadPage(packageName: string, sql: string, databaseId: number) {
   page.openPage(new PackageHeadPage(databaseId, packageName, sql));
@@ -363,7 +366,13 @@ export async function openProcedureEditPageByProName(
   databaseId: number,
 ) {
   const plSchema = await getProcedureByProName(proName, false, sessionId, dbName);
-  const plPage = new PLEditPage(PLType.PROCEDURE, databaseId, proName, plSchema);
+  if (!plSchema) {
+    return { plPage: null, isNew: false };
+  }
+  const readonly = !getDataSourceModeConfig(
+    sessionManager.sessionMap.get(sessionId)?.connection?.type,
+  )?.features?.plEdit;
+  const plPage = new PLEditPage(PLType.PROCEDURE, databaseId, proName, plSchema, false, readonly);
   const isNew = !page.pages.find((p) => p.key === plPage.pageKey);
   await page.openPage(plPage);
   return { plPage, isNew };
@@ -393,7 +402,10 @@ export async function openFunctionEditPageByFuncName(
   databaseId: number,
 ) {
   const plSchema = await getFunctionByFuncName(funcName, false, sessionId, dbName);
-  let plPage = new PLEditPage(PLType.FUNCTION, databaseId, funcName, plSchema);
+  const readonly = !getDataSourceModeConfig(
+    sessionManager.sessionMap.get(sessionId)?.connection?.type,
+  )?.features?.plEdit;
+  let plPage = new PLEditPage(PLType.FUNCTION, databaseId, funcName, plSchema, false, readonly);
   const isNew = !page.pages.find((p) => p.key === plPage.pageKey);
   await page.openPage(plPage);
   return { plPage, isNew };
@@ -481,7 +493,10 @@ export async function openTriggerEditPageByName(
   databaseId: number,
 ) {
   const plSchema: ITrigger = await getTriggerByName(triggerName, sessionId, dbName);
-  page.openPage(new PLEditPage(PLType.TRIGGER, databaseId, triggerName, plSchema));
+  const readonly = !getDataSourceModeConfig(
+    sessionManager.sessionMap.get(sessionId)?.connection?.type,
+  )?.features?.plEdit;
+  page.openPage(new PLEditPage(PLType.TRIGGER, databaseId, triggerName, plSchema, false, readonly));
 }
 /** 创建同义词页面 */
 
@@ -544,7 +559,10 @@ export async function openTypeEditPageByName(
   dbName: string,
 ) {
   const plSchema = await getTypemByName(typeName, sessionId, dbName);
-  page.openPage(new PLEditPage(PLType.TYPE, databaseId, typeName, plSchema));
+  const readonly = !getDataSourceModeConfig(
+    sessionManager.sessionMap.get(sessionId)?.connection?.type,
+  )?.features?.plEdit;
+  page.openPage(new PLEditPage(PLType.TYPE, databaseId, typeName, plSchema, false, readonly));
 }
 
 export async function openSQLResultSetViewPage(name, resultSets) {

@@ -19,7 +19,7 @@ import { formatMessage } from '@/util/intl';
  * 样式与功能开关
  */
 
-import { getServerSystemInfo, getSystemConfig } from '@/common/network/other';
+import { getServerSystemInfo, getSystemConfig, getPublicKey } from '@/common/network/other';
 import type { IUserConfig, ServerSystemInfo } from '@/d.ts';
 import odc from '@/plugins/odc';
 import { isClient } from '@/util/env';
@@ -28,6 +28,7 @@ import { initTracert } from '@/util/tracert';
 import { message } from 'antd';
 import { action, observable } from 'mobx';
 import { isLinux, isWin64 } from '@/util/utils';
+import login from './login';
 
 export const themeKey = 'odc-theme';
 
@@ -141,6 +142,12 @@ export class SettingStore {
   public serverSystemInfo: ServerSystemInfo = null;
 
   /**
+   * 非对称加密的公钥
+   */
+  @observable
+  public encryptionPublicKey: string = null;
+
+  /**
    * 系统配置是否初始化完毕
    */
   @observable
@@ -227,6 +234,9 @@ export class SettingStore {
       res?.['odc.features.task.export.enabled'] === 'true' && this.enableDataExport;
     this.enableMockdata = res?.['odc.features.task.mockdata.enabled'] === 'true';
     this.enableOSC = res?.['odc.features.task.osc.enabled'] === 'true';
+    if (login.isPrivateSpace()) {
+      this.enableOSC = res?.['odc.features.task.osc.individual.space.enabled'] === 'true';
+    }
     this.isUploadCloudStore = res?.['odc.file.interaction-mode'] === 'CLOUD_STORAGE';
   }
 
@@ -261,6 +271,7 @@ export class SettingStore {
     try {
       this.settingLoadStatus = 'loading';
       await this.fetchSystemInfo();
+      await this.getPublicKeyData();
       if (this.serverSystemInfo?.spmEnabled && odc.appConfig.spm.enable) {
         initTracert();
       }
@@ -291,6 +302,12 @@ export class SettingStore {
       console.log('server version:', info.version);
     } catch (e) {}
     this.serverSystemInfo = info;
+  }
+
+  @action
+  public async getPublicKeyData() {
+    const res = await getPublicKey();
+    this.encryptionPublicKey = res;
   }
 }
 
