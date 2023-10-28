@@ -40,6 +40,7 @@ import {
 } from '@/common/datasource';
 import ExtraConfig from './ExtraConfig';
 import JDBCParamsItem from './JDBCParamsItem';
+import RiskLevelLabel from '@/component/RiskLevelLabel';
 const Option = Select.Option;
 export interface IFormRef {
   form: FormInstance<IDatasource>;
@@ -48,9 +49,10 @@ interface IProps {
   isEdit?: boolean;
   originDatasource?: IDatasource;
   type: ConnectType;
+  disableTheme?: boolean;
 }
 export default forwardRef<IFormRef, IProps>(function DatasourceForm(
-  { isEdit, originDatasource, type }: IProps,
+  { isEdit, originDatasource, type, disableTheme }: IProps,
   ref,
 ) {
   const [form] = Form.useForm();
@@ -157,6 +159,7 @@ export default forwardRef<IFormRef, IProps>(function DatasourceForm(
         isEdit,
         originDatasource,
         dataSourceConfig: dsc,
+        disableTheme,
       }}
     >
       <Form
@@ -275,7 +278,7 @@ export default forwardRef<IFormRef, IProps>(function DatasourceForm(
                     {environments?.map((env) => {
                       return (
                         <Option key={env.id} value={env.id}>
-                          {env.name}
+                          <RiskLevelLabel color={env.style} content={env.name} />
                         </Option>
                       );
                     })}

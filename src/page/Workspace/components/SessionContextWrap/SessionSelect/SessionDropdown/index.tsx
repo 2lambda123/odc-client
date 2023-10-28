@@ -15,7 +15,7 @@
  */
 import { formatMessage } from '@/util/intl';
 import { Badge, Input, Popover, Select, Space, Spin, Tree } from 'antd';
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Key, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import styles from './index.less';
 import Icon, { SearchOutlined } from '@ant-design/icons';
 import ProjectSvg from '@/svgr/project_space.svg';
@@ -33,6 +33,8 @@ import PjSvg from '@/svgr/project_space.svg';
 import { IDatabase } from '@/d.ts/database';
 import { toInteger } from 'lodash';
 import { useParams } from '@umijs/max';
+import { tree } from 'antlr4';
+import { EnvColorMap } from '@/constant';
 interface IProps {
   dialectTypes?: ConnectionMode[];
 }
@@ -45,7 +47,16 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
   }>();
   const [searchValue, setSearchValue] = useState<string>('');
   const [from, setFrom] = useState<'project' | 'datasource'>('project');
+  const [expandedKeys, setExpandedKeys] = useState<Key[]>([]);
+  const [loadedKeys, setLoadedKeys] = useState<Key[]>([]);
   const databaseRef = useRef<Record<string, IDatabase[]>>({});
+  const treeRef = useRef<{
+    scrollTo: (node: {
+      key: string | number;
+      align?: 'top' | 'bottom' | 'auto';
+      offset?: number;
+    }) => void;
+  }>();
   const update = useUpdate();
   const { data: project, loading: projectLoading, run: fetchProjects } = useRequest(listProjects, {
     manual: true,
@@ -76,6 +87,8 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
     setIsOpen(open);
   }
   async function reloadTree() {
+    setExpandedKeys([]);
+    setLoadedKeys([]);
     if (context.datasourceMode) {
       /**
        * datasourceMode
@@ -87,13 +100,31 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
       });
       return;
     }
+
+    const session = context?.session;
+    const projectId = session?.odcDatabase?.project?.id;
+    const datasourceId = session?.odcDatabase?.dataSource?.id;
     switch (from) {
       case 'datasource': {
-        fetchDatasource(login.isPrivateSpace());
+        await fetchDatasource(login.isPrivateSpace());
+        if (session) {
+          setExpandedKeys([datasourceId]);
+          treeRef.current?.scrollTo({
+            key: datasourceId,
+            align: 'top',
+          });
+        }
         return;
       }
       case 'project': {
         fetchProjects(null, 1, 9999, false);
+        if (session) {
+          setExpandedKeys([projectId]);
+          treeRef.current?.scrollTo({
+            key: projectId,
+            align: 'top',
+          });
+        }
         return;
       }
     }
@@ -118,6 +149,7 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
                 component={getDataSourceStyleByConnectType(item.type)?.icon?.component}
                 style={{
                   fontSize: 14,
+                  color: getDataSourceStyleByConnectType(item.type)?.icon?.color,
                 }}
               />
             ),
@@ -146,6 +178,7 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
                   component={getDataSourceStyleByConnectType(item.type)?.icon?.component}
                   style={{
                     fontSize: 14,
+                    color: getDataSourceStyleByConnectType(item.type)?.icon?.color,
                   }}
                 />
               ),
@@ -161,7 +194,9 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
                     title: (
                       <>
                         {db.name}
-                        <Badge color={db?.environment?.style} />
+                        <Badge
+                          color={EnvColorMap[db?.environment?.style?.toUpperCase()]?.tipColor}
+                        />
                       </>
                     ),
                     key: `db:${db.id}`,
@@ -172,6 +207,7 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
                         component={getDataSourceStyleByConnectType(item.type)?.dbIcon?.component}
                         style={{
                           fontSize: 14,
+                          color: getDataSourceStyleByConnectType(item.type)?.icon?.color,
                         }}
                       />
                     ),
@@ -207,7 +243,7 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
                   title: (
                     <>
                       {db.name}
-                      <Badge color={db?.environment?.style} />
+                      <Badge color={EnvColorMap[db?.environment?.style?.toUpperCase()]?.tipColor} />
                     </>
                   ),
                   key: `db:${db.id}`,
@@ -220,6 +256,7 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
                       }
                       style={{
                         fontSize: 14,
+                        color: getDataSourceStyleByConnectType(db?.dataSource?.type)?.icon?.color,
                       }}
                     />
                   ),
@@ -231,8 +268,8 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
       }
     }
   }
-  async function loadData(node: EventDataNode<DataNode>) {
-    const key = node.key;
+
+  async function loadDataBase(key: Key) {
     switch (from) {
       case 'datasource': {
         const data = await fetchDatabase(null, toInteger(key), 1, 9999, null, null, null, true);
@@ -241,7 +278,6 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
             ...databaseRef.current,
             [`ds:${key}`]: data?.contents,
           };
-          update();
         }
         return;
       }
@@ -252,11 +288,15 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
             ...databaseRef.current,
             [`p:${key}`]: data?.contents,
           };
-          update();
         }
         return;
       }
     }
+  }
+  async function loadData(node: EventDataNode<DataNode>) {
+    const key = node.key;
+    await loadDataBase(key);
+    update();
   }
   useEffect(() => {
     reloadTree();
@@ -268,6 +308,7 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
       open={isOpen}
       showArrow={false}
       onOpenChange={onOpen}
+      overlayStyle={{ paddingTop: 2 }}
       content={
         <Spin spinning={loading}>
           <div className={styles.main}>
@@ -322,6 +363,9 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
               }}
             >
               <Tree
+                //@ts-ignore
+                ref={treeRef}
+                expandAction="click"
                 className={styles.tree}
                 key={from}
                 onSelect={async (_, info) => {
@@ -342,13 +386,25 @@ const SessionDropdown: React.FC<IProps> = function ({ children }) {
                   }
                   setIsOpen(false);
                 }}
-                activeKey={
-                  context?.datasourceMode ? context?.datasourceId : `db:${context?.databaseId}`
-                }
+                selectedKeys={[
+                  context?.datasourceMode ? context?.datasourceId : `db:${context?.databaseId}`,
+                ].filter(Boolean)}
                 loadData={loadData}
                 height={215}
                 showIcon
                 treeData={treeData()}
+                expandedKeys={expandedKeys}
+                loadedKeys={loadedKeys}
+                onExpand={(expandedKeys, { expanded, node }) => {
+                  if (!expanded || loadedKeys.includes(node.key)) {
+                    setExpandedKeys(expandedKeys);
+                    return;
+                  }
+                }}
+                onLoad={(loadedKeys, { node }) => {
+                  setLoadedKeys(loadedKeys);
+                  setExpandedKeys([...expandedKeys, node.key]);
+                }}
               />
             </div>
           </div>

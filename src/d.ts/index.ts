@@ -786,6 +786,7 @@ export enum IConnectionTestErrorType {
   OB_MYSQL_ACCESS_DENIED = 'ObMysqlAccessDenied',
   UNKNOWN = 'Unknown',
   CONNECT_TYPE_NOT_MATCH = 'ConnectionDatabaseTypeMismatched',
+  INIT_SCRIPT_FAILED = 'ConnectionInitScriptFailed',
 }
 
 export interface IConnectionProperty {
@@ -1073,6 +1074,8 @@ export enum ColumnShowType {
   DATETIME = 'DATETIME',
   YEAR = 'YEAR',
   MONTH = 'MONTH',
+  ENUM = 'ENUM', // 枚举类型
+  SET = 'SET', // 集合类型
 }
 
 // 索引
@@ -1552,6 +1555,7 @@ export interface ISQLExplain {
   tree: ISQLExplainTreeNode[];
   outline: string;
   originalText: string;
+  showFormatInfo?: boolean;
 }
 
 export interface ISQLExecuteDetail {
@@ -2176,6 +2180,10 @@ export interface IDataArchiveJobParameters {
   targetDatabaseName?: string;
   targetDataSourceName?: string;
   migrationInsertAction?: MigrationInsertAction;
+  rateLimit?: {
+    rowLimit?: number;
+    dataSizeLimit?: number;
+  };
   tables: {
     conditionExpression: string;
     tableName: string;
@@ -2193,6 +2201,10 @@ export interface IDataClearJobParameters {
   sourceDatabaseName?: string;
   targetDataBaseId: number;
   targetDatabaseName?: string;
+  rateLimit?: {
+    rowLimit?: number;
+    dataSizeLimit?: number;
+  };
   tables: {
     conditionExpression: string;
     tableName: string;
