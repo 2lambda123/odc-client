@@ -78,7 +78,7 @@ export const procedureMenusConfig: Partial<Record<ResourceNodeType, IMenuItemCon
     {
       key: 'REFRESH',
       text: [
-        formatMessage({ id: 'odc.ResourceTree.actions.Refresh' }), //刷新
+        formatMessage({ id: 'odc.ResourceTree.actions.Refresh Procedures' }), //刷新
       ],
       icon: ReloadOutlined,
       actionType: actionTypes.read,
