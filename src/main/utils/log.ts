@@ -21,7 +21,7 @@ import path from 'path';
  */
 log.transports.file.maxSize = 1024 * 1024 * 3;
 log.transports.file.resolvePath = (v) => {
-  return path.join(v.userData, '/logs/client/' + v.fileName);
+  return path.join(v.userData||'.', '/logs/client/' + v.fileName);
 };
 log.catchErrors({
   showDialog: false,
