@@ -43,7 +43,7 @@ export const procedureMenusConfig: Partial<Record<ResourceNodeType, IMenuItemCon
     {
       key: 'BATCH_COMPILE',
       text: [
-        formatMessage({ id: 'odc.TreeNodeMenu.config.procedure.BatchCompilation' }), //批量编译
+        formatMessage({ id: 'odc.TreeNodeMenu.config.procedure.Batch Compilation' }), //批量编译
       ],
       actionType: actionTypes.create,
       icon: BatchCompileSvg,
