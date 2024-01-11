@@ -63,7 +63,7 @@ export const procedureMenusConfig: Partial<Record<ResourceNodeType, IMenuItemCon
     {
       key: 'CREATE',
       text: [
-        formatMessage({ id: 'odc.TreeNodeMenu.config.procedure.CreateAStoredProcedure' }), //新建存储过程
+        formatMessage({ id: 'odc.TreeNodeMenu.config.procedure.Create a New Stored Procedure' }), //新建存储过程
       ],
       icon: PlusOutlined,
       actionType: actionTypes.create,
