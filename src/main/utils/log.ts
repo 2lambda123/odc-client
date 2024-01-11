@@ -20,9 +20,7 @@ import path from 'path';
  * 日志文件分割粒度
  */
 log.transports.file.maxSize = 1024 * 1024 * 3;
-log.transports.file.resolvePath = (v) => {
-  return path.join(v.userData||'.', '/logs/client/' + v.fileName);
-};
+// Remove the log.transports.file.resolvePath assignment
 log.catchErrors({
   handleError, // import the handleError function from errorHandler.ts file
   showDialog: false,
@@ -34,3 +32,5 @@ log.catchErrors({
 });
 
 export default log;
+import { handleError } from './errorHandler';
+import { handleError } from './errorHandler';
