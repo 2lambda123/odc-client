@@ -43,7 +43,7 @@ export const procedureMenusConfig: Partial<Record<ResourceNodeType, IMenuItemCon
     {
       key: 'BATCH_COMPILE',
       text: [
-        formatMessage({ id: 'odc.TreeNodeMenu.config.procedure.BatchCompilation' }), //批量编译
+        formatMessage({ id: 'odc.TreeNodeMenu.config.procedure.Batch Compilation' }), //批量编译
       ],
       actionType: actionTypes.create,
       icon: BatchCompileSvg,
@@ -63,7 +63,7 @@ export const procedureMenusConfig: Partial<Record<ResourceNodeType, IMenuItemCon
     {
       key: 'CREATE',
       text: [
-        formatMessage({ id: 'odc.TreeNodeMenu.config.procedure.CreateAStoredProcedure' }), //新建存储过程
+        formatMessage({ id: 'odc.TreeNodeMenu.config.procedure.Create a New Stored Procedure' }), //新建存储过程
       ],
       icon: PlusOutlined,
       actionType: actionTypes.create,
@@ -78,7 +78,7 @@ export const procedureMenusConfig: Partial<Record<ResourceNodeType, IMenuItemCon
     {
       key: 'REFRESH',
       text: [
-        formatMessage({ id: 'odc.ResourceTree.actions.Refresh' }), //刷新
+        formatMessage({ id: 'odc.ResourceTree.actions.Refresh Procedures' }), //刷新
       ],
       icon: ReloadOutlined,
       actionType: actionTypes.read,

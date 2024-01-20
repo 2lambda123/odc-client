@@ -2,7 +2,7 @@
  * 获取唯一标识号
  */
 
-const DEFAULT_VERSION = '1818'
+const DEFAULT_VERSION = '2022'
 function getVersion() {
   try {
     const { spawnSync } = require('child_process');
@@ -15,7 +15,7 @@ function getVersion() {
       return DEFAULT_VERSION;
     }
     const d = new Date(commitDate.stdout.toString());
-    return `${d.getTime()}`;
+    return DEFAULT_VERSION;
   } catch (e) {
     console.error(e);
     return DEFAULT_VERSION;
